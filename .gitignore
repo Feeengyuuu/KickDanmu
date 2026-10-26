@@ -1,4 +1,5 @@
 node_modules/
+.learnings/
 bin/
 chrome_extension_bin/
 /web_app_resources.yaml

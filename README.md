@@ -18,11 +18,28 @@ It's deployed to Google Cloud Platform (GCP) by using [Google Cloud Build](https
 
 You can build the extension locally by `npm run ext_linux`, which dumps the bundled JS files into `./chrome_extension_bin` directory, which can be loaded in debug mode in browsers. It talks directly to the PROD web server.
 
+On Windows, run `npm run ext_windows`. The unpacked extension is written to the same `./chrome_extension_bin` directory.
+
 You can do so for firefox with `npm run ext_firefox_linux_zip`.
 
-If you want to build it for Windows/MacOS, you gotta do some work youself :)
+## Kick adapter
+
+All Kick-specific code lives in `frontend/chrome_extension/content_script/kick/`:
+
+- `kick_selectors.ts`: every DOM selector the extension depends on, as ordered fallback chains. When Kick ships a redesign, start here.
+- `kick_api.ts`: the Kick web endpoints used (channel info, single VOD metadata, chat history buckets), with timeouts that also cover stalled response bodies.
+- `kick_assembler.ts`: picks the chat source per page. VODs use the history API timeline (DOM fallback). Live streams read the chat DOM, or poll the history API when the chat list is not mounted (chat popped out, narrow layout, or a markup change).
+- `kick_live_api_chat_pool.ts` / `kick_vod_chat_pool.ts`: the two API-backed chat sources.
+
+Diagnostics: run `localStorage.setItem("danmage:debug", "1")` on kick.com and reload to log which chat source is active. Broken selectors and API fallbacks are always reported once as `[DanMage]` console warnings.
+
+Tests run in headless Chrome, e.g. `npx bundage prun frontend/chrome_extension/content_script/kick/kick_adapter_test` (set `CHROME` to a Chrome executable).
 
 ## Version
+
+### Version 5.4.0
+
+Kick: moved all Kick code into a dedicated adapter with centralized selectors. Replies no longer render their quoted parent as a second danmaku line, badge tooltips and timestamps no longer trigger block rules, and badges scale with the danmaku font. The settings button anchors to Kick's stable `data-testid` controls. Older VODs (beyond the latest 30) now resolve through the single-video endpoint and keep API timing. Live danmaku keeps working when the chat list is missing by polling the chat history API with backoff. Added opt-in debug logging.
 
 ### Version 5.3.2
 

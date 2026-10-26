@@ -6,6 +6,10 @@ import {
 } from "../../../../interface/player_settings";
 import { BlockPatternTester } from "../common/block_pattern_tester";
 import { ChatContentBuilder } from "../common/chat_content_builder";
+import {
+  DisplaySettingsTransform,
+  keepDisplaySettings,
+} from "../danmaku_profile";
 import { E } from "@selfage/element/factory";
 
 export interface DanmakuElement {
@@ -19,6 +23,7 @@ export class DanmakuElement extends EventEmitter {
     chatEntry: ChatEntry,
     blockPatternTester: BlockPatternTester,
     contentBuilder: ChatContentBuilder,
+    transformDisplaySettings: DisplaySettingsTransform = keepDisplaySettings,
   ): DanmakuElement {
     return new DanmakuElement(
       window,
@@ -26,6 +31,7 @@ export class DanmakuElement extends EventEmitter {
       contentBuilder,
       playerSettings.displaySettings,
       chatEntry,
+      transformDisplaySettings,
     );
   }
 
@@ -38,6 +44,8 @@ export class DanmakuElement extends EventEmitter {
   private posY: number;
   private playAfterLeaving: boolean;
   private playByPlayer: boolean;
+  private playbackRate = 1;
+  private occupyUntilDisplayEnded = false;
   private endOccupyTimeoutId: number;
   private endDisplayTimeoutId: number;
 
@@ -47,6 +55,7 @@ export class DanmakuElement extends EventEmitter {
     private danmakuElementContentBuilder: ChatContentBuilder,
     private displaySettings: DisplaySettings,
     private chatEntry: ChatEntry,
+    private transformDisplaySettings: DisplaySettingsTransform = keepDisplaySettings,
   ) {
     super();
     this.body = E.div({
@@ -60,26 +69,27 @@ export class DanmakuElement extends EventEmitter {
   }
 
   private render(): void {
+    let displaySettings = this.transformDisplaySettings(this.displaySettings);
     this.body.style.opacity = `${
-      this.displaySettings.opacity * DanmakuElement.OPACITY_SCALE
+      displaySettings.opacity * DanmakuElement.OPACITY_SCALE
     }`;
     this.body.style.fontSize = `${
-      this.displaySettings.fontSize * DanmakuElement.FONT_SIZE_SCALE
+      displaySettings.fontSize * DanmakuElement.FONT_SIZE_SCALE
     }px`;
-    this.body.style.fontWeight = `${this.displaySettings.fontWeight}`;
+    this.body.style.fontWeight = `${displaySettings.fontWeight}`;
     this.body.style.setProperty(
       "font-family",
-      this.displaySettings.fontFamily,
+      displaySettings.fontFamily,
       "important",
     );
-    if (this.displaySettings.enableInteraction) {
+    if (displaySettings.enableInteraction) {
       this.body.style.pointerEvents = "auto";
     } else {
       this.body.style.pointerEvents = "none";
     }
     this.body.innerHTML = this.danmakuElementContentBuilder.build(
       this.chatEntry,
-      this.displaySettings,
+      displaySettings,
     );
   }
   private leaveToResume(): void {
@@ -94,8 +104,11 @@ export class DanmakuElement extends EventEmitter {
   }
 
   private startTransition(): void {
+    let speed =
+      this.transformDisplaySettings(this.displaySettings).speed *
+      this.playbackRate;
     if (this.posX > 0) {
-      let remainingDuration = this.posX / this.displaySettings.speed;
+      let remainingDuration = this.posX / speed;
       this.endOccupyTimeoutId = this.window.setTimeout(() => {
         this.emit("occupyEnded");
       }, remainingDuration * 1000);
@@ -103,8 +116,7 @@ export class DanmakuElement extends EventEmitter {
       this.emit("occupyEnded");
     }
     if (this.posX > -this.canvasWidth) {
-      let duration =
-        (this.canvasWidth + this.posX) / this.displaySettings.speed;
+      let duration = (this.canvasWidth + this.posX) / speed;
       this.body.style.transition = `transform ${duration}s linear`;
       this.transform(-this.canvasWidth);
       this.endDisplayTimeoutId = this.window.setTimeout(() => {
@@ -146,9 +158,20 @@ export class DanmakuElement extends EventEmitter {
     return this.body.offsetHeight;
   }
 
-  public setReadyToPlay(posY: number, canvasWidth: number): void {
+  public setReadyToPlay(
+    posY: number,
+    canvasWidth: number,
+    elapsedMediaTimeMs = 0,
+  ): boolean {
     this.canvasWidth = canvasWidth;
-    this.posX = this.body.offsetWidth;
+    let normalizedElapsedMediaTimeMs =
+      Number.isFinite(elapsedMediaTimeMs) && elapsedMediaTimeMs > 0
+        ? elapsedMediaTimeMs
+        : 0;
+    let speed = this.transformDisplaySettings(this.displaySettings).speed;
+    this.posX =
+      this.body.offsetWidth - (speed * normalizedElapsedMediaTimeMs) / 1000;
+    this.occupyUntilDisplayEnded = this.posX <= 0;
     this.posY = posY;
     this.body.style.bottom = "";
     this.body.style.top = "0";
@@ -157,6 +180,11 @@ export class DanmakuElement extends EventEmitter {
     this.body.style.visibility = "visible";
     // Force reflow.
     this.body.offsetHeight;
+    return this.posX > -this.canvasWidth;
+  }
+
+  public shouldOccupyUntilDisplayEnded(): boolean {
+    return this.occupyUntilDisplayEnded;
   }
 
   public play(): void {
@@ -167,6 +195,17 @@ export class DanmakuElement extends EventEmitter {
   public pause(): void {
     this.playByPlayer = false;
     this.pauseTransition();
+  }
+
+  public setPlaybackRate(playbackRate: number): void {
+    let normalizedPlaybackRate =
+      Number.isFinite(playbackRate) && playbackRate > 0 ? playbackRate : 1;
+    if (normalizedPlaybackRate === this.playbackRate) {
+      return;
+    }
+    this.tryPauseTransition();
+    this.playbackRate = normalizedPlaybackRate;
+    this.tryStartTransition();
   }
 
   public reRender(): void {

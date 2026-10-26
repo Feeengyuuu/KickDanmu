@@ -15,6 +15,8 @@ import {
   FONT_FAMILY_DEFAULT,
   FONT_SIZE_RANGE,
   FONT_WEIGHT_RANGE,
+  LEGACY_FONT_FAMILY_DEFAULT,
+  LEGACY_FONT_WEIGHT_DEFAULT,
   OPACITY_RANGE,
   SHOW_CHAT_WINDOW_DEFAULT,
   SHOW_USER_NAME_DEFAULT,
@@ -87,14 +89,22 @@ export class PlayerSettingsStorage {
       remotePlayerSettings?.displaySettings?.bottomMargin ??
         localPlayerSettings?.displaySettings?.bottomMargin,
     );
-    displaySettings.fontWeight = FONT_WEIGHT_RANGE.getValidValue(
+    let savedFontWeight =
       remotePlayerSettings?.displaySettings?.fontWeight ??
-        localPlayerSettings?.displaySettings?.fontWeight,
-    );
-    displaySettings.fontFamily =
+      localPlayerSettings?.displaySettings?.fontWeight;
+    let savedFontFamily =
       remotePlayerSettings?.displaySettings?.fontFamily ??
-      localPlayerSettings?.displaySettings?.fontFamily ??
-      FONT_FAMILY_DEFAULT;
+      localPlayerSettings?.displaySettings?.fontFamily;
+    if (savedFontFamily === LEGACY_FONT_FAMILY_DEFAULT) {
+      savedFontFamily = undefined;
+      if (savedFontWeight === LEGACY_FONT_WEIGHT_DEFAULT) {
+        savedFontWeight = undefined;
+      }
+    }
+    displaySettings.fontWeight = FONT_WEIGHT_RANGE.getValidValue(
+      savedFontWeight,
+    );
+    displaySettings.fontFamily = savedFontFamily ?? FONT_FAMILY_DEFAULT;
     displaySettings.showUserName =
       remotePlayerSettings?.displaySettings?.showUserName ??
       localPlayerSettings?.displaySettings?.showUserName ??

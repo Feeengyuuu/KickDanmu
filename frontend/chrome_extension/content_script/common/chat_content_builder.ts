@@ -1,9 +1,20 @@
 import { ChatEntry } from "../../../../interface/chat_entry";
 import { DisplaySettings } from "../../../../interface/player_settings";
+import { KICK_SELECTORS } from "../kick/kick_selectors";
 
 let FONT_SIZE_SCALE = 1 / 1;
-let TEXT_SHADOW =
-  "-1px 0 1px black, 0 1px 1px black, 1px 0 1px black, 0 -1px 1px black";
+// A thick outer outline (the stroke is painted under the fill) plus a soft
+// glow keeps danmaku readable on bright scenes, where Douyu's 1px halo fades.
+// The stroke is in em so it scales with the font size setting: 2px at Kick's
+// default 30px.
+let TEXT_OUTLINE_STYLES: { [key: string]: string } = {
+  "-webkit-text-stroke": "0.067em black",
+  "paint-order": "stroke",
+  "text-shadow": "0 0 3px rgba(0, 0, 0, 0.6)",
+};
+let TEXT_OUTLINE_CSS = Object.entries(TEXT_OUTLINE_STYLES)
+  .map(([name, value]) => `${name}: ${value};`)
+  .join(" ");
 
 function removeSelectedChildElements(children: NodeListOf<Element>): void {
   for (let i = children.length - 1; i >= 0; i--) {
@@ -29,6 +40,9 @@ function getFontStyles(displaySettings: DisplaySettings): {
 } {
   return {
     "font-family": displaySettings.fontFamily,
+    // Kick's chat spans carry font-weight utility classes, which beat the
+    // weight inherited from the danmaku element.
+    "font-weight": `${displaySettings.fontWeight}`,
     "font-size": `${displaySettings.fontSize * FONT_SIZE_SCALE}px`,
     "line-height": "normal",
   };
@@ -40,7 +54,7 @@ function getFontAndColorStyles(displaySettings: DisplaySettings): {
   return {
     ...getFontStyles(displaySettings),
     color: "white",
-    "text-shadow": TEXT_SHADOW,
+    ...TEXT_OUTLINE_STYLES,
   };
 }
 
@@ -62,7 +76,7 @@ export class StructuredContentBuilder implements ChatContentBuilder {
   }
 
   public build(chatEntry: ChatEntry, displaySettings: DisplaySettings): string {
-    let contentHTML = `<span style="color: white; text-shadow: ${TEXT_SHADOW};">${chatEntry.content}</span>`;
+    let contentHTML = `<span style="color: white; ${TEXT_OUTLINE_CSS}">${chatEntry.content}</span>`;
     if (displaySettings.showUserName) {
       return `<span style="color: white; margin-right: 8px;">${chatEntry.userNickname}</span>${contentHTML}`;
     } else {
@@ -377,6 +391,8 @@ export class Twitch7tvChatContentBuilder implements ChatContentBuilder {
 
 export class KickChatContentBuilder implements ChatContentBuilder {
   private static COLON_REPLACER = />:&nbsp;<\//;
+  // Emotes are drawn larger than the text so they stay recognizable.
+  private static EMOTE_SCALE = 1.4;
 
   public extractContent(content: string): string {
     let template = document.createElement("template");
@@ -384,38 +400,79 @@ export class KickChatContentBuilder implements ChatContentBuilder {
       KickChatContentBuilder.COLON_REPLACER,
       `> </`,
     );
+    this.removeChrome(template);
     this.removeUserName(template);
     return template.innerHTML;
   }
 
   private removeUserName(template: HTMLTemplateElement): void {
-    // Remove username element
     removeSelectedChildElements(
       template.content.querySelectorAll(
-        ".inline-flex.min-w-0.flex-nowrap.items-baseline.rounded.transition-colors",
+        KICK_SELECTORS.usernameWrapper.join(","),
       ),
     );
   }
 
+  // Removes everything that is not part of the message itself: the timestamp
+  // label, the "Replying to ..." header of replies, and SVG <title> tooltips of
+  // badges (e.g. "Level 64"), which would otherwise be matched by block rules.
+  private removeChrome(template: HTMLTemplateElement): void {
+    removeSelectedChildElements(
+      template.content.querySelectorAll(
+        KICK_SELECTORS.messageTimestamp.join(","),
+      ),
+    );
+    removeSelectedChildElements(template.content.querySelectorAll("svg title"));
+    this.removeReplyHeaders(template);
+  }
+
+  // A reply row renders its quoted parent as a <button> placed before the
+  // element that holds the author. Walk up from each author and drop such
+  // preceding buttons, which does not depend on Kick's utility classes.
+  private removeReplyHeaders(template: HTMLTemplateElement): void {
+    let root = template.content;
+    let replyHeaders = new Set<Element>();
+    for (let author of Array.from(
+      root.querySelectorAll(KICK_SELECTORS.usernameWrapper.join(",")),
+    )) {
+      for (
+        let node: Element | null = author;
+        node && node.parentNode !== root;
+        node = node.parentElement
+      ) {
+        for (
+          let sibling = node.previousElementSibling;
+          sibling;
+          sibling = sibling.previousElementSibling
+        ) {
+          if (sibling.tagName === "BUTTON") {
+            replyHeaders.add(sibling);
+          }
+        }
+      }
+    }
+    replyHeaders.forEach((replyHeader) => replyHeader.remove());
+  }
+
   public build(chatEntry: ChatEntry, displaySettings: DisplaySettings): string {
     let template = document.createElement("template");
-    template.innerHTML = chatEntry.content;
     if (!displaySettings.showUserName) {
       template.innerHTML = chatEntry.content.replace(
         KickChatContentBuilder.COLON_REPLACER,
         `> </`,
       );
+      this.removeChrome(template);
       this.removeUserName(template);
     } else {
       template.innerHTML = chatEntry.content;
+      this.removeChrome(template);
     }
-    // Remove timestamp element
-    removeSelectedChildElements(
-      template.content.querySelectorAll(".text-neutral.pr-1.font-semibold"),
-    );
 
+    // Kick sizes rows with var(--chatroom-font-size) and badges with em units.
+    // Pin every wrapper to the danmaku font size so badges scale with text.
     setStyleForSelectedChildElements(template.content.querySelectorAll("div"), {
       padding: "0px",
+      "font-size": `${displaySettings.fontSize * FONT_SIZE_SCALE}px`,
     });
     setStyleForSelectedChildElements(
       template.content.querySelectorAll("span"),
@@ -426,9 +483,20 @@ export class KickChatContentBuilder implements ChatContentBuilder {
       template.content.querySelectorAll("button"),
       getFontStyles(displaySettings),
     );
+    // Kick's emote frame and the box inside it are sized from the chat font
+    // size, and images are capped at max-width: 100%, so the frame would
+    // squeeze a larger emote. Size the frame, its box and the image alike.
+    let emoteFrames = KICK_SELECTORS.emoteFrame.join(",");
     setStyleForSelectedChildElements(
-      template.content.querySelectorAll("img"),
-      getHeightStyles(displaySettings.fontSize),
+      template.content.querySelectorAll(
+        `${emoteFrames}, :is(${emoteFrames}) div, img`,
+      ),
+      {
+        ...getHeightStyles(
+          displaySettings.fontSize * KickChatContentBuilder.EMOTE_SCALE,
+        ),
+        "max-width": "none",
+      },
     );
     return template.innerHTML;
   }

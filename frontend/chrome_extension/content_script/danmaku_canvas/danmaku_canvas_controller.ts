@@ -1,11 +1,16 @@
 import { ChatEntry } from "../../../../interface/chat_entry";
 import {
+  DisplaySettings,
   DistributionStyle,
   PlayerSettings,
 } from "../../../../interface/player_settings";
 import { BlockPatternTester } from "../common/block_pattern_tester";
 import { ChatContentBuilder } from "../common/chat_content_builder";
 import { LinkedList, LinkedNode } from "../common/linked_list";
+import {
+  DisplaySettingsTransform,
+  keepDisplaySettings,
+} from "../danmaku_profile";
 import { DanmakuElement } from "./danmaku_element";
 
 export class DanmakuCanvasController {
@@ -14,6 +19,7 @@ export class DanmakuCanvasController {
     playerSettings: PlayerSettings,
     blockPatternTester: BlockPatternTester,
     contentBuilder: ChatContentBuilder,
+    transformDisplaySettings: DisplaySettingsTransform = keepDisplaySettings,
   ): DanmakuCanvasController {
     return new DanmakuCanvasController(
       Math.random,
@@ -25,14 +31,18 @@ export class DanmakuCanvasController {
           chatEntry,
           blockPatternTester,
           contentBuilder,
+          transformDisplaySettings,
         ),
+      transformDisplaySettings,
     );
   }
 
   private width: number;
   private height: number;
   private playing: boolean;
+  private playbackRate = 1;
   private occupied = new Array<number>();
+  private occupiedReleasers = new Map<DanmakuElement, () => void>();
   private elements = new LinkedList<DanmakuElement>();
   private resizeObserver: ResizeObserver;
 
@@ -44,6 +54,7 @@ export class DanmakuCanvasController {
       playerSettings: PlayerSettings,
       chatEntry: ChatEntry,
     ) => DanmakuElement,
+    private transformDisplaySettings: DisplaySettingsTransform = keepDisplaySettings,
   ) {
     this.resizeObserver = new ResizeObserver((entries) =>
       this.getNewSize(entries[0]),
@@ -54,13 +65,15 @@ export class DanmakuCanvasController {
 
   private getNewSize(entry: ResizeObserverEntry): void {
     let newWidth: number;
+    let newHeight: number;
     if (entry.contentBoxSize) {
       newWidth = entry.contentBoxSize[0].inlineSize;
-      this.height = entry.contentBoxSize[0].blockSize;
+      newHeight = entry.contentBoxSize[0].blockSize;
     } else {
       newWidth = entry.contentRect.width;
-      this.height = entry.contentRect.height;
+      newHeight = entry.contentRect.height;
     }
+    this.height = newHeight;
     if (newWidth !== this.width) {
       this.width = newWidth;
       this.elements.forEach((danmakuElement) => {
@@ -72,27 +85,43 @@ export class DanmakuCanvasController {
     }
   }
 
-  public add(chatEntries: Array<ChatEntry>): void {
-    if (!this.playerSettings.displaySettings.enable || !this.height) {
+  public add(
+    chatEntries: Array<ChatEntry>,
+    currentTimestamp?: number,
+  ): void {
+    if (chatEntries.length === 0) {
+      return;
+    }
+    let displaySettings = this.transformDisplaySettings(
+      this.playerSettings.displaySettings,
+    );
+    if (!displaySettings.enable || !this.height) {
       return;
     }
     for (let chatEntry of chatEntries) {
-      this.tryStartPlaying(chatEntry);
+      this.tryStartPlaying(chatEntry, currentTimestamp);
     }
   }
 
-  private tryStartPlaying(chatEntry: ChatEntry): void {
+  private tryStartPlaying(
+    chatEntry: ChatEntry,
+    currentTimestamp?: number,
+  ): void {
     let element = this.createDanmakuElement(this.playerSettings, chatEntry);
     this.canvas.append(element.body);
-
-    let startY = Math.floor(
-      (this.playerSettings.displaySettings.topMargin / 100) * this.height,
+    element.setPlaybackRate(this.playbackRate);
+    let displaySettings = this.transformDisplaySettings(
+      this.playerSettings.displaySettings,
     );
+    let elapsedMediaTimeMs =
+      currentTimestamp !== undefined && chatEntry.timestamp !== undefined
+        ? Math.max(0, currentTimestamp - chatEntry.timestamp)
+        : 0;
+
+    let startY = Math.floor((displaySettings.topMargin / 100) * this.height);
     let endY =
       this.height -
-      Math.floor(
-        (this.playerSettings.displaySettings.bottomMargin / 100) * this.height,
-      ); // Exclusive
+      Math.floor((displaySettings.bottomMargin / 100) * this.height); // Exclusive
     let elementHeight = element.getOffsetHeight();
     if (endY - startY - elementHeight < 0) {
       // Not enough room for a danmaku.
@@ -101,11 +130,10 @@ export class DanmakuCanvasController {
     }
 
     let marginAround =
-      Math.floor(
-        elementHeight / (this.playerSettings.displaySettings.density / 100),
-      ) - elementHeight;
+      Math.floor(elementHeight / (displaySettings.density / 100)) -
+      elementHeight;
     let occupyScore = 0;
-    let initY = this.getInitY(startY, endY, elementHeight);
+    let initY = this.getInitY(startY, endY, elementHeight, displaySettings);
     let headY = initY - marginAround;
     let tailY = initY + elementHeight + marginAround; // Exclusive
     for (let i = Math.max(0, headY); i < Math.min(endY, tailY); i++) {
@@ -145,15 +173,31 @@ export class DanmakuCanvasController {
       posY = posYDown;
     }
 
+    if (!element.setReadyToPlay(posY, this.width, elapsedMediaTimeMs)) {
+      element.remove();
+      return;
+    }
+
     for (let i = posY; i < posY + elementHeight; i++) {
       this.occupied[i]++;
     }
     let node = this.elements.pushBack(element);
-    element.once("occupyEnded", () =>
-      this.releaseOccupied(posY, elementHeight),
-    );
+    let releaseOccupied = (): void => {
+      if (!this.occupiedReleasers.has(element)) {
+        return;
+      }
+      this.occupiedReleasers.delete(element);
+      this.releaseOccupied(posY, elementHeight);
+    };
+    this.occupiedReleasers.set(element, releaseOccupied);
+    if (element.shouldOccupyUntilDisplayEnded()) {
+      // A late VOD message can start fully inside the viewport. Keep its lane
+      // until it leaves so another equally late message cannot overlap it.
+      element.once("displayEnded", releaseOccupied);
+    } else {
+      element.once("occupyEnded", releaseOccupied);
+    }
     element.once("displayEnded", () => this.removeNode(node));
-    element.setReadyToPlay(posY, this.width);
     if (this.playing) {
       element.play();
     }
@@ -163,8 +207,9 @@ export class DanmakuCanvasController {
     startY: number,
     endY: number,
     elementHeight: number,
+    displaySettings: DisplaySettings,
   ): number {
-    switch (this.playerSettings.displaySettings.distributionStyle) {
+    switch (displaySettings.distributionStyle) {
       case DistributionStyle.TopDownDistributionStyle:
         return startY;
       case DistributionStyle.RandomDistributionStyle:
@@ -236,6 +281,7 @@ export class DanmakuCanvasController {
   }
 
   private removeNode(node: LinkedNode<DanmakuElement>): void {
+    this.occupiedReleasers.get(node.value)?.();
     node.remove();
     node.value.remove();
   }
@@ -254,15 +300,21 @@ export class DanmakuCanvasController {
     });
   }
 
+  public setPlaybackRate(playbackRate: number): void {
+    let normalizedPlaybackRate =
+      Number.isFinite(playbackRate) && playbackRate > 0 ? playbackRate : 1;
+    if (normalizedPlaybackRate === this.playbackRate) {
+      return;
+    }
+    this.playbackRate = normalizedPlaybackRate;
+    this.elements.forEach((danmakuElement) => {
+      danmakuElement.setPlaybackRate(this.playbackRate);
+    });
+  }
+
   public updateDisplaySettings(): void {
     if (!this.playerSettings.displaySettings.enable) {
-      this.elements.forEach((danmakuElement) => {
-        danmakuElement.remove();
-      });
-      this.elements.clear();
-      for (let i = 0; i < this.occupied.length; i++) {
-        this.occupied[i] = 0;
-      }
+      this.clear();
     } else {
       this.elements.forEach((danmakuElement) => {
         danmakuElement.reRender();
@@ -282,6 +334,9 @@ export class DanmakuCanvasController {
     this.elements.forEachNode((danmakuElementNode) => {
       this.removeNode(danmakuElementNode);
     });
+    this.elements.clear();
+    this.occupiedReleasers.clear();
+    this.occupied.fill(0);
   }
 
   public remove(): void {
