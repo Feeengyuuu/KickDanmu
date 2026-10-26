@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "DanMage: Flow chat on YouTube & Twitch & more",
+    "message": "KickDanmu - Danmaku for Kick chat",
     "description": "Extension name."
   },
   "extDescription": {
-    "message": "A.K.A. NicoNico-style chats, danmaku, bullet chat, or scrolling chat.",
+    "message": "Kick live and VOD chat as scrolling danmaku (bullet comments): bold outlined text, larger emotes. Also YouTube live chat and Twitch.",
     "description": "Extension description."
   },
   "displaySettingsTitle": {
@@ -14,14 +14,6 @@
   "blockSettingsTitle": {
     "message": "Block settings",
     "description": "Tab title for block settings."
-  },
-  "chatTitle": {
-    "message": "Chat",
-    "description": "Tab title for showing chats."
-  },
-  "accountTitle": {
-    "message": "Account",
-    "description": "Tab title for account-related info."
   },
   "opacityOption": {
     "message": "Opacity - percentage",
@@ -102,53 +94,5 @@
   "RegExpBlockKind": {
     "message": "RegExp",
     "description": "An enum value for one type of block rules."
-  },
-  "submitNewChatButton": {
-    "message": "Fire!",
-    "description": "Text on the button to submit a new chat."
-  },
-  "chatInputPlaceHolderSignedOut": {
-    "message": "Sign in before posting chats",
-    "description": "Place holder for the input to submit a new chat."
-  },
-  "chatInputPlaceHolderSignedIn": {
-    "message": "Lock & load",
-    "description": "Place holder for the input to submit a new chat."
-  },
-  "firstSignInReminder": {
-    "message": "Sign in ",
-    "description": "First part before URL in 'Sign in www.danmage.com with your Google account to be able to post chats.'."
-  },
-  "secondSignInReminder": {
-    "message": " with your Google account to be able to sync settings and post chats.",
-    "description": "Second part after URL in 'Sign in www.danmage.com with your Google account to be able to post chats.'"
-  },
-  "signInButton": {
-    "message": "Sign in with Google",
-    "description": "Text on the button to sign in."
-  },
-  "signOutButton": {
-    "message": "Sign out",
-    "description": "Text on the button to sign out."
-  },
-  "welcomeMessage": {
-    "message": "Welcome!",
-    "description": "The message to welcome a signed-in user."
-  },
-  "welcomeWithNameMessage": {
-    "message": "Welcome, ",
-    "description": "The message to welcome a signed-in user with name."
-  },
-  "welcomeWithNameEndingMessage": {
-    "message": "!",
-    "description": "The ending message to welcome a signed in user with name."
-  },
-  "firstExplanation": {
-    "message": "Settings will be synced and chats will be posted to  ",
-    "description": "First part before URL in 'Chat will be posted to www.danmage.com.'"
-  },
-  "secondExplanation": {
-    "message": ".",
-    "description": "Second part after URL in 'Chat will be posted to www.danmage.com.'"
   }
 }

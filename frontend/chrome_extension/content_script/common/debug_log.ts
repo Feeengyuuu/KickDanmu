@@ -1,12 +1,12 @@
 /**
  * Opt-in diagnostics for site adapters. Enable on a page with
- *   localStorage.setItem("danmage:debug", "1")
+ *   localStorage.setItem("kickdanmu:debug", "1")
  * and reload. Warnings that indicate a broken site integration (for example a
  * selector that no longer matches) are always printed, but only once per key.
  */
 export class DebugLog {
-  private static STORAGE_KEY = "danmage:debug";
-  private static PREFIX = "[DanMage]";
+  private static STORAGE_KEY = "kickdanmu:debug";
+  private static PREFIX = "[KickDanmu]";
 
   private warnedKeys = new Set<string>();
 

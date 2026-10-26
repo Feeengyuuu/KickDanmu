@@ -1,7 +1,6 @@
-import { ChatEntry, HostApp } from "../../../interface/chat_entry";
+import { ChatEntry } from "../../../interface/chat_entry";
 import { PlayerSettings } from "../../../interface/player_settings";
-import { newGetChatRequest, newPostChatRequest } from "../../client_requests";
-import { ChatPool, OnPageChatPool, StructuredChatPool } from "./chat_pool";
+import { ChatPool, OnPageChatPool } from "./chat_pool";
 import {
   ChatWindowToggler,
   NoopChatWindowToggler,
@@ -9,65 +8,20 @@ import {
 } from "./chat_window_toggler";
 import { BlockPatternTester } from "./common/block_pattern_tester";
 import {
-  StructuredContentBuilder,
   Twitch7tvChatContentBuilder,
   TwitchChatContentBuilder,
   YouTubeChatContentBuilder,
 } from "./common/chat_content_builder";
 import { GlobalDocuments } from "./common/global_documents";
-import { SERVICE_CLIENT } from "./common/service_client";
 import { ControlPanel } from "./control_panel";
 import {
   ControlPanelAttacher,
   ControlPanelOneTimeAttacher,
-  ControlPanelPeriodicAttacher,
 } from "./control_panel_attacher";
 import { DanmakuCanvasController } from "./danmaku_canvas/danmaku_canvas_controller";
 import { ChatPacingSettings } from "./danmaku_profile";
-import {
-  CrunchyrollVideoIdExtractor,
-  NoopVideoIdExtractor,
-  VideoIdExtractor,
-  YouTubeVideoIdExtractor,
-} from "./video_id_extractor";
-import { WebServiceClient } from "@selfage/web_service_client";
 
 export class PlayerController {
-  public static createYouTubeStructured(
-    video: HTMLVideoElement,
-    canvas: HTMLElement,
-    anchorButtonElement: Element,
-    globalDocuments: GlobalDocuments,
-    playerSettings: PlayerSettings,
-  ): PlayerController {
-    let blockPatternTester = BlockPatternTester.createIdentity(
-      new StructuredContentBuilder(),
-      playerSettings.blockSettings,
-    );
-    let controlPanel = ControlPanel.createYouTubeStructured(
-      globalDocuments,
-      blockPatternTester,
-      playerSettings,
-    );
-    return new PlayerController(
-      window,
-      SERVICE_CLIENT,
-      video,
-      DanmakuCanvasController.create(
-        canvas,
-        playerSettings,
-        blockPatternTester,
-        new StructuredContentBuilder(),
-      ),
-      NoopChatWindowToggler.create(),
-      controlPanel,
-      ControlPanelOneTimeAttacher.create(controlPanel, anchorButtonElement),
-      new StructuredChatPool(blockPatternTester),
-      YouTubeVideoIdExtractor.create(canvas),
-      HostApp.YouTube,
-    );
-  }
-
   public static createYouTubeChat(
     video: HTMLVideoElement,
     canvas: HTMLElement,
@@ -83,12 +37,10 @@ export class PlayerController {
     );
     let controlPanel = ControlPanel.createYouTubeChat(
       globalDocuments,
-      blockPatternTester,
       playerSettings,
     );
     return new PlayerController(
       window,
-      SERVICE_CLIENT,
       video,
       DanmakuCanvasController.create(
         canvas,
@@ -103,7 +55,6 @@ export class PlayerController {
       controlPanel,
       ControlPanelOneTimeAttacher.create(controlPanel, anchorButtonElement),
       new OnPageChatPool(chatContainer, blockPatternTester),
-      NoopVideoIdExtractor.create(),
     );
   }
 
@@ -121,12 +72,10 @@ export class PlayerController {
     );
     let controlPanel = ControlPanel.createTwitch(
       globalDocuments,
-      blockPatternTester,
       playerSettings,
     );
     return new PlayerController(
       window,
-      SERVICE_CLIENT,
       video,
       DanmakuCanvasController.create(
         canvas,
@@ -138,7 +87,6 @@ export class PlayerController {
       controlPanel,
       ControlPanelOneTimeAttacher.create(controlPanel, anchorButtonElement),
       new OnPageChatPool(chatContainer, blockPatternTester),
-      NoopVideoIdExtractor.create(),
     );
   }
 
@@ -156,12 +104,10 @@ export class PlayerController {
     );
     let controlPanel = ControlPanel.createTwitch(
       globalDocuments,
-      blockPatternTester,
       playerSettings,
     );
     return new PlayerController(
       window,
-      SERVICE_CLIENT,
       video,
       DanmakuCanvasController.create(
         canvas,
@@ -173,52 +119,13 @@ export class PlayerController {
       controlPanel,
       ControlPanelOneTimeAttacher.create(controlPanel, anchorButtonElement),
       new OnPageChatPool(chatContainer, blockPatternTester),
-      NoopVideoIdExtractor.create(),
     );
   }
 
-  public static createCrunchyroll(
-    video: HTMLVideoElement,
-    canvas: HTMLElement,
-    anchorElementSelectFn: () => HTMLElement,
-    globalDocuments: GlobalDocuments,
-    playerSettings: PlayerSettings,
-  ): PlayerController {
-    let blockPatternTester = BlockPatternTester.createIdentity(
-      new StructuredContentBuilder(),
-      playerSettings.blockSettings,
-    );
-    let controlPanel = ControlPanel.createCrunchyroll(
-      globalDocuments,
-      blockPatternTester,
-      playerSettings,
-    );
-    return new PlayerController(
-      window,
-      SERVICE_CLIENT,
-      video,
-      DanmakuCanvasController.create(
-        canvas,
-        playerSettings,
-        blockPatternTester,
-        new StructuredContentBuilder(),
-      ),
-      NoopChatWindowToggler.create(),
-      controlPanel,
-      ControlPanelPeriodicAttacher.create(controlPanel, anchorElementSelectFn),
-      new StructuredChatPool(blockPatternTester),
-      CrunchyrollVideoIdExtractor.create(),
-      HostApp.Crunchyroll,
-    );
-  }
-
-  private static HAVE_NOTHING = 0;
   private static HAVE_FUTURE_DATA = 3;
 
-  private videoId: string;
   private addChatsCycleId: number | undefined;
   private delayedPlayId: number | undefined;
-  private delayedSwitchVideoId: number | undefined;
   private isChatLoopRunning = false;
   private chatPoolStarted = false;
   private awaitingSynchronizedPlaying = false;
@@ -229,15 +136,12 @@ export class PlayerController {
 
   public constructor(
     private window: Window,
-    private serviceClient: WebServiceClient,
     private video: HTMLVideoElement,
     private danmakuCanvasController: DanmakuCanvasController,
     private chatWindowToggler: ChatWindowToggler,
     private controlPanel: ControlPanel,
     private controlPanelAttacher: ControlPanelAttacher,
     private chatPool: ChatPool,
-    private videoIdExtractor: VideoIdExtractor,
-    private hostApp?: HostApp,
     private followPlaybackRate = false,
     private chatPacing?: ChatPacingSettings,
     private synchronizeChatOnSeek = false,
@@ -254,18 +158,6 @@ export class PlayerController {
           this.play();
         }
       }, 0);
-    }
-    if (this.hostApp) {
-      this.video.onseeking = () => this.clear();
-      this.video.onloadedmetadata = () => this.switchVideo();
-      // Video can be loaded and started because it is completely async for content script.
-      if (this.video.readyState > PlayerController.HAVE_NOTHING) {
-        this.delayedSwitchVideoId = this.window.setTimeout(() => {
-          this.delayedSwitchVideoId = undefined;
-          this.switchVideo();
-        }, 0);
-      }
-      this.controlPanel.on("fire", (chatEntry) => this.fire(chatEntry));
     }
     this.controlPanel.on("updateDisplaySettings", () =>
       this.updateDisplaySettings(),
@@ -396,7 +288,6 @@ export class PlayerController {
     }
     let videoTimestamp = this.getCurrentTimestamp();
     let chatEntries = this.chatPool.read(videoTimestamp);
-    this.controlPanel.addChats(chatEntries);
     this.danmakuCanvasController.add(
       this.getPacedDanmakuChats(chatEntries, frameTimestamp),
       videoTimestamp,
@@ -514,55 +405,7 @@ export class PlayerController {
 
   private clearChats(): void {
     this.resetChatPacing();
-    this.controlPanel.clearChats();
     this.danmakuCanvasController.clear();
-  }
-
-  private async switchVideo(): Promise<void> {
-    this.clearChats();
-    this.chatPool.clear();
-    this.videoId = await this.videoIdExtractor.extract();
-    if (!this.videoId) {
-      return;
-    }
-
-    let videoIdBeforeLoad = this.videoId;
-    let response = await this.serviceClient.send(
-      newGetChatRequest({
-        hostApp: this.hostApp,
-        hostContentId: this.videoId,
-      }),
-    );
-    if (videoIdBeforeLoad !== this.videoId) {
-      return;
-    }
-
-    this.chatPool.fill(response.chatEntries);
-  }
-
-  private async fire(chatEntry: ChatEntry): Promise<void> {
-    if (!this.videoId) {
-      throw new Error("No video id found yet.");
-    }
-
-    let timestamp = this.getCurrentTimestamp();
-    chatEntry.timestamp = timestamp;
-    chatEntry.hostApp = this.hostApp;
-    chatEntry.hostContentId = this.videoId;
-
-    let videoIdBeforeLoad = this.videoId;
-    let response = await this.serviceClient.send(
-      newPostChatRequest({
-        chatEntry: chatEntry,
-      }),
-    );
-    if (videoIdBeforeLoad !== this.videoId) {
-      return;
-    }
-
-    this.chatPool.fill([response.chatEntry]);
-    this.controlPanel.addChats([response.chatEntry]);
-    this.danmakuCanvasController.add([response.chatEntry]);
   }
 
   private updateDisplaySettings(): void {
@@ -579,10 +422,6 @@ export class PlayerController {
     if (this.delayedPlayId !== undefined) {
       this.window.clearTimeout(this.delayedPlayId);
       this.delayedPlayId = undefined;
-    }
-    if (this.delayedSwitchVideoId !== undefined) {
-      this.window.clearTimeout(this.delayedSwitchVideoId);
-      this.delayedSwitchVideoId = undefined;
     }
     this.video.onplaying = undefined;
     this.video.onpause = undefined;

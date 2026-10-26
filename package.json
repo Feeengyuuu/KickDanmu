@@ -1,21 +1,28 @@
 {
-  "name": "danmage",
-  "version": "0.0.1",
-  "description": "Backend server, web apps and chrome extension for DanMage.",
+  "name": "kickdanmu",
+  "version": "1.0.0",
+  "description": "KickDanmu: Chrome extension that shows Kick chat as scrolling danmaku (bullet comments). Fork of DanMage.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/teststaybaka/danmage.git"
+    "url": "git+https://github.com/Feeengyuuu/KickDanmu.git"
   },
   "keywords": [
-    "Danmage",
-    "TypeScript"
+    "kick",
+    "danmaku",
+    "danmu",
+    "bullet-comments",
+    "chrome-extension",
+    "弹幕"
   ],
-  "author": "Yuxuan Xie <teststaybaka@gmail.com> (http://www.yuxuanxie.com)",
+  "author": "Feeengyuuu (https://github.com/Feeengyuuu)",
+  "contributors": [
+    "Yuxuan Xie <teststaybaka@gmail.com> (http://www.yuxuanxie.com), author of DanMage"
+  ],
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/teststaybaka/danmage/issues"
+    "url": "https://github.com/Feeengyuuu/KickDanmu/issues"
   },
-  "homepage": "https://github.com/teststaybaka/danmage#readme",
+  "homepage": "https://github.com/Feeengyuuu/KickDanmu#readme",
   "devDependencies": {
     "@selfage/bundler_cli": "^5.7.0",
     "@selfage/cli": "^5.0.3",

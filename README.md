@@ -1,70 +1,93 @@
-# DanMage
+# KickDanmu · Kick 直播弹幕
 
-## Overview
+把 **Kick** 直播和回放的聊天变成**斗鱼风格的飘屏弹幕**：加粗黑体 + 黑色描边，亮场景也看得清。不用登录，不收集任何数据。
 
-DanMage is a project that brings NicoNico-style flow chat (A.K.A., scrolling chat, danmaku, danmu) to multiple video sites as both [a chrome extension](https://chrome.google.com/webstore/detail/danmage/elhaopojedichjdgkglifmijgkeclalm) and [a firefox extension](https://addons.mozilla.org/en-US/firefox/addon/danmage), now supporting YouTube, Twitch, Kick and Crunchyroll. It's also deployed as a [website](https://www.danmage.com/), which provides minimum backend support to the extension, such as storing posted chats and player settings.
+Turn **Kick** live and VOD chat into scrolling danmaku (bullet comments). [English below](#english).
 
-It's definitely not perfect. The DOM tree is a complete mess and not easy to parse, while the sites can introduce changes anytime without notifying me.
+![KickDanmu 效果示意](store/screenshot_1.png)
 
-So if you want to see danmaku being built into a native video platform, wish list [here](https://www.secount.com/danmaku).
+## 功能
 
-![Secount wish list page](./danmaku_site.png)
+- **斗鱼风弹幕**：黑体加粗（600）、2px 黑色外描边、80% 不透明，和斗鱼网页版的弹幕字体一致
+- **不挡画面**：弹幕只占播放器上方 30%
+- **直播、回放都能用**：回放按时间轴同步，跟随播放速度，拖动进度条后自动重新对齐
+- **表情放大**：表情按字号的 1.4 倍显示
+- **干净**：自动跳过被管理员删除的消息、「新消息」分隔线、回复引用和时间戳
+- **随心调**：字号、速度、透明度、密度、字体、粗细都能改；支持关键词 / 正则屏蔽
+- 同样支持 **YouTube 直播聊天** 和 **Twitch**
 
-## Deployment
+![设置面板](store/screenshot_2.png)
 
-It's deployed to Google Cloud Platform (GCP) by using [Google Cloud Build](https://cloud.google.com/build) using `cloudbuild.yaml` and `Dockerfile`.
+## 安装（约 1 分钟）
 
-## Build
+1. 到 [Releases](https://github.com/Feeengyuuu/KickDanmu/releases/latest) 下载 `KickDanmu-v1.0.0.zip`，解压到一个之后不会删掉的文件夹。
+2. Chrome 地址栏打开 `chrome://extensions`（Edge 打开 `edge://extensions`）。
+3. 打开右上角的 **开发者模式**。
+4. 点 **加载已解压的扩展程序**，选中刚才解压出来的文件夹（文件夹里能直接看到 `manifest.json`）。
+5. 打开任意 Kick 直播间，弹幕就会开始飘。
 
-You can build the extension locally by `npm run ext_linux`, which dumps the bundled JS files into `./chrome_extension_bin` directory, which can be loaded in debug mode in browsers. It talks directly to the PROD web server.
+**更新**：下载新版 zip，解压覆盖原来的文件夹，再到扩展页点 KickDanmu 卡片上的刷新按钮。
 
-On Windows, run `npm run ext_windows`. The unpacked extension is written to the same `./chrome_extension_bin` directory.
+## 使用
 
-You can do so for firefox with `npm run ext_firefox_linux_zip`.
+把鼠标移到播放器上，控制栏右下角会多出一个弹幕按钮，点开就是设置面板：
 
-## Kick adapter
+- **样式设置**：开关弹幕、不透明度、滚动速度、字体大小、字体粗细、弹幕密度、上下留白、字体、是否显示用户名、悬停暂停
+- **屏蔽设置**：按关键词或正则表达式屏蔽弹幕
 
-All Kick-specific code lives in `frontend/chrome_extension/content_script/kick/`:
+设置按网站分别保存在你自己的浏览器里。
 
-- `kick_selectors.ts`: every DOM selector the extension depends on, as ordered fallback chains. When Kick ships a redesign, start here.
-- `kick_api.ts`: the Kick web endpoints used (channel info, single VOD metadata, chat history buckets), with timeouts that also cover stalled response bodies.
-- `kick_assembler.ts`: picks the chat source per page. VODs use the history API timeline (DOM fallback). Live streams read the chat DOM, or poll the history API when the chat list is not mounted (chat popped out, narrow layout, or a markup change).
-- `kick_live_api_chat_pool.ts` / `kick_vod_chat_pool.ts`: the two API-backed chat sources.
+## 隐私
 
-Diagnostics: run `localStorage.setItem("danmage:debug", "1")` on kick.com and reload to log which chat source is active. Broken selectors and API fallbacks are always reported once as `[DanMage]` console warnings.
+- 不需要登录，不收集、不上传任何数据，没有统计或广告代码。
+- 设置只保存在浏览器本地。
+- 唯一的网络请求是 Kick 自己的公开聊天接口（回放时、以及页面上没有聊天列表时，用来读取聊天记录）。
 
-Tests run in headless Chrome, e.g. `npx bundage prun frontend/chrome_extension/content_script/kick/kick_adapter_test` (set `CHROME` to a Chrome executable).
+详见 [PRIVACY.md](PRIVACY.md)。
 
-## Version
+## 常见问题
 
-### Version 5.4.0
+- **没有弹幕？** 刷新一下直播页面；确认扩展页里 KickDanmu 是开启状态，并且「开发者模式」没有关掉。
+- **标了 18+ 的直播间**：要先点 Kick 的「已满十八岁」，播放器出来以后弹幕才会出现。
+- **Kick 改版后失效**：Kick 经常改网页结构，遇到问题欢迎到 [Issues](https://github.com/Feeengyuuu/KickDanmu/issues) 反馈。
 
-Kick: moved all Kick code into a dedicated adapter with centralized selectors. Replies no longer render their quoted parent as a second danmaku line, badge tooltips and timestamps no longer trigger block rules, and badges scale with the danmaku font. The settings button anchors to Kick's stable `data-testid` controls. Older VODs (beyond the latest 30) now resolve through the single-video endpoint and keep API timing. Live danmaku keeps working when the chat list is missing by polling the chat history API with backoff. Added opt-in debug logging.
+## 从源码构建
 
-### Version 5.3.2
+```bash
+npm install
+npm run ext_windows   # Windows
+npm run ext_linux     # Linux / macOS
+```
 
-Merged fix for compability with other scripts.
+打包好的扩展在 `chrome_extension_bin/`，可以直接「加载已解压的扩展程序」。
 
-### Version 5.3.1
+Kick 相关代码都在 `frontend/chrome_extension/content_script/kick/`：
 
-Fixed a bug when navigating between YouTube live replaces with chat window hidden, danmaku might not show.
+- `kick_selectors.ts`：扩展依赖的所有 Kick 页面元素，Kick 改版时先改这里
+- `kick_api.ts`：用到的 Kick 接口（频道信息、回放信息、聊天记录）
+- `kick_assembler.ts`：按页面类型选择聊天来源（直播读聊天列表，回放读聊天记录接口）
+- `kick_live_dom_chat_pool.ts` / `kick_live_api_chat_pool.ts` / `kick_vod_chat_pool.ts`：三种聊天来源
 
-### Version 5.3.0
+调试：在 kick.com 的控制台执行 `localStorage.setItem("kickdanmu:debug", "1")` 并刷新，会打印当前使用的聊天来源。
 
-Added a show/hide YouTube chat window option in the display settings tab, which is only needed on YouTube. Twitch and Kick can hide chat using their own buttons without disrupting danmaku. As a result, the button to open settings panel is relocated to the bottom of video players on all platforms.
+测试在无头 Chrome 里运行，例如 `npx bundage prun frontend/chrome_extension/content_script/kick/kick_adapter_test`（需要把环境变量 `CHROME` 设为 Chrome 的路径）。
 
-### Version 5.2.1
+## 致谢与许可
 
-Fixed small issues on Kick, including danmaku appearing mid screen on large screen, and sometimes timestamp is not removed. Though still easy to break whenver Kick updates their UI.
+KickDanmu 基于 Yuxuan Xie 的 [DanMage](https://github.com/teststaybaka/danmage) 修改，按 [GPL-3.0-or-later](LICENSE) 发布。
 
-### Version 5.2.0
+2026 年 10 月的主要改动：重写 Kick 支持（直播 / 回放聊天来源、删除消息过滤、表情尺寸），改为斗鱼风弹幕样式，去掉 DanMage 的登录、云同步和服务器弹幕（YouTube 普通视频与 Crunchyroll 依赖这些功能，因此不再支持），更换名称和图标。仓库里的 `backend/` 和 `frontend/web/` 是 DanMage 原有的服务端和网站代码，扩展本身不再使用。
 
-Supported Kick live streaming platform. Updated danmaku styling for YouTube.
+KickDanmu 是独立项目，与 Kick、斗鱼均无关联。
 
-### Version 5.1.0
+---
 
-Added support for 7tv extension on Twitch. Small refactors on extrating and applying styles to danmaku HTML elements.
+## English
 
-### Version 5.0.1
+**KickDanmu** shows Kick chat as scrolling danmaku over the player, in a bold, outlined style that stays readable on bright scenes. It works on live streams and VODs (synced to the VOD timeline and playback rate), draws emotes larger, and skips messages deleted by moderators. YouTube live chat and Twitch also work. No sign-in, no tracking, settings stay in your browser.
 
-Huge bump of library versions, which breaks the authentication on old extension unfortunately. Please update if you want to log in and load player settings. Otherwise the old extension works fine on its own.
+**Install:** download `KickDanmu-v1.0.0.zip` from [Releases](https://github.com/Feeengyuuu/KickDanmu/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick the unzipped folder.
+
+**Settings:** hover the player and click the danmaku button at the bottom right of the controls.
+
+KickDanmu is a modified version of [DanMage](https://github.com/teststaybaka/danmage) by Yuxuan Xie, released under GPL-3.0-or-later. Not affiliated with Kick or Douyu.

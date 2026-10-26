@@ -21,7 +21,6 @@ import { PlayerController } from "./player_controller";
 import { Assembler, Refresher } from "./refresher";
 import { TEST_RUNNER } from "@selfage/puppeteer_test_runner";
 import { assertThat, eq, gt, lt } from "@selfage/test_matcher";
-import { WebServiceClient } from "@selfage/web_service_client";
 
 function getTransitionDuration(element: DanmakuElement): number {
   return Number(element.body.style.transition.split(" ")[1].slice(0, -1));
@@ -757,7 +756,6 @@ TEST_RUNNER.run({
         let video = document.createElement("video");
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           canvasController,
           { updateDisplaySettings: () => {}, remove: () => {} } as never,
@@ -769,8 +767,6 @@ TEST_RUNNER.run({
           } as never,
           { start: () => {}, stop: () => {} } as never,
           new OnPageChatPool(chatContainer, blockPatternTester),
-          {} as never,
-          undefined,
           false,
           { intervalMs: 80, maxPendingChats: 30 },
         );
@@ -850,7 +846,6 @@ TEST_RUNNER.run({
         let displayedContents = new Array<string>();
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: (chatEntries: Array<ChatEntry>) =>
@@ -879,8 +874,6 @@ TEST_RUNNER.run({
               return chats;
             },
           } as never,
-          {} as never,
-          undefined,
           true,
           { intervalMs: 80, maxPendingChats: 30 },
         );
@@ -923,7 +916,6 @@ TEST_RUNNER.run({
         let displayFrameTimes = new Array<number>();
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: (chatEntries: Array<ChatEntry>) => {
@@ -952,8 +944,6 @@ TEST_RUNNER.run({
               return chats;
             },
           } as never,
-          {} as never,
-          undefined,
           true,
           { intervalMs: 80, maxPendingChats: 30 },
         );
@@ -1009,7 +999,6 @@ TEST_RUNNER.run({
         ];
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: (
@@ -1042,8 +1031,6 @@ TEST_RUNNER.run({
               return chats;
             },
           } as never,
-          {} as never,
-          undefined,
           true,
           { intervalMs: 80, maxPendingChats: 30 },
           true,
@@ -1090,7 +1077,6 @@ TEST_RUNNER.run({
         let displayedContents = new Array<string>();
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: (chatEntries: Array<ChatEntry>) =>
@@ -1118,8 +1104,6 @@ TEST_RUNNER.run({
               return chats;
             },
           } as never,
-          {} as never,
-          undefined,
           true,
           { intervalMs: 80, maxPendingChats: 30 },
         );
@@ -1170,7 +1154,6 @@ TEST_RUNNER.run({
         let poolStartCount = 0;
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: (chatEntries: Array<ChatEntry>) =>
@@ -1196,8 +1179,6 @@ TEST_RUNNER.run({
               return chat ? [chat] : [];
             },
           } as never,
-          {} as never,
-          undefined,
           false,
           { intervalMs: 80, maxPendingChats: 30 },
           true,
@@ -1245,7 +1226,6 @@ TEST_RUNNER.run({
         let video = document.createElement("video");
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1270,8 +1250,6 @@ TEST_RUNNER.run({
               return [];
             },
           } as never,
-          {} as never,
-          undefined,
           true,
           { intervalMs: 80, maxPendingChats: 30 },
           true,
@@ -1338,7 +1316,6 @@ TEST_RUNNER.run({
         });
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1361,8 +1338,6 @@ TEST_RUNNER.run({
             start: () => poolStartCount++,
             read: () => [],
           },
-          {} as never,
-          undefined,
           false,
           undefined,
           true,
@@ -1428,7 +1403,6 @@ TEST_RUNNER.run({
         });
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1451,8 +1425,6 @@ TEST_RUNNER.run({
             start: (timestamp: number) => poolStartTimestamps.push(timestamp),
             read: () => [],
           },
-          {} as never,
-          undefined,
           false,
           undefined,
           true,
@@ -1498,7 +1470,6 @@ TEST_RUNNER.run({
         let readCount = 0;
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1521,7 +1492,6 @@ TEST_RUNNER.run({
               return [];
             },
           } as never,
-          {} as never,
         );
 
         // Execute: browsers can deliver duplicate playing events while the
@@ -1580,7 +1550,6 @@ TEST_RUNNER.run({
         let poolStartCount = 0;
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1603,8 +1572,6 @@ TEST_RUNNER.run({
             start: () => poolStartCount++,
             read: () => [],
           },
-          {} as never,
-          undefined,
           false,
           undefined,
           true,
@@ -1646,7 +1613,6 @@ TEST_RUNNER.run({
         let canvasClearCount = 0;
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1669,8 +1635,6 @@ TEST_RUNNER.run({
             start: () => poolStartCount++,
             read: () => [],
           },
-          {} as never,
-          undefined,
           false,
           undefined,
           true,
@@ -1766,7 +1730,6 @@ TEST_RUNNER.run({
         let canvasClearCount = 0;
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: () => {},
@@ -1789,8 +1752,6 @@ TEST_RUNNER.run({
             start: (timestamp: number) => poolStartTimestamps.push(timestamp),
             read: () => [],
           },
-          {} as never,
-          undefined,
           false,
           undefined,
           true,
@@ -1837,7 +1798,6 @@ TEST_RUNNER.run({
         }));
         let controller = new PlayerController(
           playerWindow,
-          {} as WebServiceClient,
           video,
           {
             add: (chatEntries: Array<ChatEntry>) =>
@@ -1864,8 +1824,6 @@ TEST_RUNNER.run({
               return chats;
             },
           } as never,
-          {} as never,
-          undefined,
           false,
           { intervalMs: 80, maxPendingChats: 30 },
         );
@@ -1898,7 +1856,6 @@ TEST_RUNNER.run({
         } as unknown as DanmakuCanvasController;
         let controller = new PlayerController(
           window,
-          {} as WebServiceClient,
           video,
           canvasController,
           { updateDisplaySettings: () => {}, remove: () => {} } as never,
@@ -1909,8 +1866,6 @@ TEST_RUNNER.run({
           } as never,
           { start: () => {}, stop: () => {} } as never,
           {} as never,
-          {} as never,
-          undefined,
           true,
         );
 

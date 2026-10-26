@@ -1,47 +1,33 @@
 {
   "manifest_version": 2,
   "name": "__MSG_extName__",
+  "short_name": "KickDanmu",
   "description": "__MSG_extDescription__",
-  "version": "5.4.0",
+  "version": "1.0.0",
+  "homepage_url": "https://github.com/Feeengyuuu/KickDanmu",
   "icons": {
+    "16": "image/icon_16.png",
+    "32": "image/icon_32.png",
+    "48": "image/icon_48.png",
     "128": "image/app_icon.png"
   },
   "default_locale": "en",
-  "background": {
-    "scripts": [
-      "background/index.js"
-    ]
-  },
   "content_scripts": [
     {
       "matches": [
+        "https://kick.com/*",
         "https://www.youtube.com/*",
-        "https://www.twitch.tv/*",
-        "https://kick.com/*"
+        "https://www.twitch.tv/*"
       ],
-      "js": [
-        "content_script/index.js"
-      ],
-      "run_at": "document_end"
-    },
-    {
-      "matches": [
-        "https://static.crunchyroll.com/*"
-      ],
-      "all_frames": true,
       "js": [
         "content_script/index.js"
       ],
       "run_at": "document_end"
     }
   ],
-  "permissions": [
-    "identity",
-    "https://www.danmage.com/"
-  ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "0a150fd6759d28eec63560dee702589a3954ba02@danmage.com"
+      "id": "kickdanmu@feeengyuuu"
     }
   }
 }

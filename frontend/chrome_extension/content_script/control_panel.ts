@@ -1,12 +1,8 @@
 import EventEmitter = require("events");
-import { ChatEntry } from "../../../interface/chat_entry";
 import { PlayerSettings } from "../../../interface/player_settings";
 import { ColorScheme } from "../../color_scheme";
 import { FONT_M } from "../../font_sizes";
-import { AccountTab } from "./account_tab/account_tab";
 import { BlockSettingsTab } from "./block_settings_tab/block_settings_tab";
-import { ChatListTab } from "./chat_list_tab/chat_list_tab";
-import { BlockPatternTester } from "./common/block_pattern_tester";
 import { GlobalDocuments } from "./common/global_documents";
 import {
   PLAYER_SETTINGS_STORAGE,
@@ -18,42 +14,18 @@ import { Ref, assign } from "@selfage/ref";
 import { TabNavigator } from "@selfage/tabs/navigator";
 
 enum Tab {
-  ACCOUNT = 1,
-  CHAT_LIST = 2,
-  DISPLAY_SETTINGS = 3,
-  BLOCK_SETTINGS = 4,
+  DISPLAY_SETTINGS = 1,
+  BLOCK_SETTINGS = 2,
 }
 
 export interface ControlPanel {
-  on(
-    event: "fire",
-    listener: (chatEntry: ChatEntry) => Promise<void> | void,
-  ): this;
   on(event: "updateDisplaySettings", listener: () => void): this;
   on(event: "updateBlockSettings", listener: () => void): this;
 }
 
 export class ControlPanel extends EventEmitter {
-  public static createYouTubeStructured(
-    globalDocuments: GlobalDocuments,
-    blockPatternTester: BlockPatternTester,
-    playerSettings: PlayerSettings,
-  ): ControlPanel {
-    return new ControlPanel(
-      window,
-      PLAYER_SETTINGS_STORAGE,
-      `height: 100%; aspect-ratio: 1/1;`,
-      "currentColor",
-      true,
-      globalDocuments,
-      blockPatternTester,
-      playerSettings,
-    );
-  }
-
   public static createYouTubeChat(
     globalDocuments: GlobalDocuments,
-    blockPatternTester: BlockPatternTester,
     playerSettings: PlayerSettings,
   ): ControlPanel {
     return new ControlPanel(
@@ -61,16 +33,13 @@ export class ControlPanel extends EventEmitter {
       PLAYER_SETTINGS_STORAGE,
       `height: 100%; aspect-ratio: 1/1;`,
       "currentColor",
-      false,
       globalDocuments,
-      blockPatternTester,
       playerSettings,
     );
   }
 
   public static createTwitch(
     globalDocuments: GlobalDocuments,
-    blockPatternTester: BlockPatternTester,
     playerSettings: PlayerSettings,
   ): ControlPanel {
     return new ControlPanel(
@@ -78,16 +47,13 @@ export class ControlPanel extends EventEmitter {
       PLAYER_SETTINGS_STORAGE,
       `height: 100%; aspect-ratio: 1/1;`,
       "white",
-      false,
       globalDocuments,
-      blockPatternTester,
       playerSettings,
     );
   }
 
   public static createKick(
     globalDocuments: GlobalDocuments,
-    blockPatternTester: BlockPatternTester,
     playerSettings: PlayerSettings,
   ): ControlPanel {
     return new ControlPanel(
@@ -95,26 +61,7 @@ export class ControlPanel extends EventEmitter {
       PLAYER_SETTINGS_STORAGE,
       `height: 44px; width: 44px;`,
       "white",
-      false,
       globalDocuments,
-      blockPatternTester,
-      playerSettings,
-    );
-  }
-
-  public static createCrunchyroll(
-    globalDocuments: GlobalDocuments,
-    blockPatternTester: BlockPatternTester,
-    playerSettings: PlayerSettings,
-  ): ControlPanel {
-    return new ControlPanel(
-      window,
-      PLAYER_SETTINGS_STORAGE,
-      `height: 40px; width: 40px;`,
-      "white",
-      true,
-      globalDocuments,
-      blockPatternTester,
       playerSettings,
     );
   }
@@ -125,18 +72,12 @@ export class ControlPanel extends EventEmitter {
   public button: HTMLDivElement;
   public panel: HTMLDivElement;
   private tabHeadLine = new Ref<HTMLDivElement>();
-  private chatListTabHead = new Ref<HTMLDivElement>();
-  private chatListTabButton = new Ref<HTMLDivElement>();
   private displaySettingsTabHead = new Ref<HTMLDivElement>();
   private displaySettingsTabButton = new Ref<HTMLDivElement>();
   private blockSettingsTabHead = new Ref<HTMLDivElement>();
   private blockSettingsTabButton = new Ref<HTMLDivElement>();
-  private accountTabHead = new Ref<HTMLDivElement>();
-  private accountTabButton = new Ref<HTMLDivElement>();
-  private chatListTab = new Ref<ChatListTab>();
   private displaySettingsTab = new Ref<DisplaySettingsTab>();
   private blockSettingsTab = new Ref<BlockSettingsTab>();
-  private accountTab = new Ref<AccountTab>();
   private tabNavigator: TabNavigator<Tab>;
 
   public constructor(
@@ -144,25 +85,11 @@ export class ControlPanel extends EventEmitter {
     private playerSettingsStorage: PlayerSettingsStorage,
     buttonStyle: string,
     buttonColor: string,
-    hasChat: boolean,
     private globalDocuments: GlobalDocuments,
-    private blockPatternTester: BlockPatternTester,
     private playerSettings: PlayerSettings,
   ) {
     super();
     let tabHeads = new Array<HTMLDivElement>();
-    if (hasChat) {
-      tabHeads.push(
-        assign(
-          this.chatListTabHead,
-          ControlPanel.createTabHead(
-            this.chatListTabButton,
-            chrome.i18n.getMessage("chatTitle"),
-            `M0 0 L50 0 L50 50 L0 50 z  M0 75 L50 75 L50 125 L0 125 z  M0 150 L50 150 L50 200 L0 200 z  M75 0 L200 0 L200 50 L75 50 z  M75 75 L200 75 L200 125 L75 125 z  M75 150 L200 150 L200 200 L75 200 z`,
-          ),
-        ),
-      );
-    }
     tabHeads.push(
       assign(
         this.displaySettingsTabHead,
@@ -180,25 +107,9 @@ export class ControlPanel extends EventEmitter {
           `M100 0 A100 100 0 0 1 100 200 A100 100 0 0 1 100 0 z  M159 138 A70 70 0 0 0 62 41 z  M41 62 A70 70 0 0 0 138 159 z`,
         ),
       ),
-      assign(
-        this.accountTabHead,
-        ControlPanel.createTabHead(
-          this.accountTabButton,
-          chrome.i18n.getMessage("accountTitle"),
-          `M0 200 A105 105 0 0 1 200 200 L0 200 M100 0 A65 65 0 1 1 100 130 A65 65 0 1 1 100 0 z`,
-        ),
-      ),
     );
 
     let tabs = new Array<HTMLDivElement>();
-    if (hasChat) {
-      tabs.push(
-        assign(
-          this.chatListTab,
-          ChatListTab.create(this.blockPatternTester).hide(),
-        ).body,
-      );
-    }
     tabs.push(
       assign(
         this.displaySettingsTab,
@@ -208,7 +119,6 @@ export class ControlPanel extends EventEmitter {
         this.blockSettingsTab,
         BlockSettingsTab.create(this.playerSettings.blockSettings).hide(),
       ).body,
-      assign(this.accountTab, AccountTab.create().hide()).body,
     );
 
     this.button = E.div(
@@ -261,26 +171,13 @@ export class ControlPanel extends EventEmitter {
       (tab) => this.removeTab(tab),
     );
 
-    if (this.chatListTabButton.val) {
-      this.tabNavigator.goTo(Tab.CHAT_LIST);
-      this.chatListTabButton.val.addEventListener("click", () =>
-        this.tabNavigator.goTo(Tab.CHAT_LIST),
-      );
-    } else {
-      this.tabNavigator.goTo(Tab.DISPLAY_SETTINGS);
-    }
+    this.tabNavigator.goTo(Tab.DISPLAY_SETTINGS);
     this.displaySettingsTabButton.val.addEventListener("click", () =>
       this.tabNavigator.goTo(Tab.DISPLAY_SETTINGS),
     );
     this.blockSettingsTabButton.val.addEventListener("click", () =>
       this.tabNavigator.goTo(Tab.BLOCK_SETTINGS),
     );
-    this.accountTabHead.val.addEventListener("click", () =>
-      this.tabNavigator.goTo(Tab.ACCOUNT),
-    );
-    if (this.chatListTab.val) {
-      this.chatListTab.val.on("fire", (chatEntry) => this.fire(chatEntry));
-    }
     this.displaySettingsTab.val.on("update", () =>
       this.updateDisplaySettings(),
     );
@@ -372,14 +269,6 @@ export class ControlPanel extends EventEmitter {
 
   private addTab(tab: Tab): void {
     switch (tab) {
-      case Tab.ACCOUNT:
-        this.highlightTabHead(this.accountTabHead.val);
-        this.accountTab.val.show();
-        break;
-      case Tab.CHAT_LIST:
-        this.highlightTabHead(this.chatListTabHead.val);
-        this.chatListTab.val.show();
-        break;
       case Tab.DISPLAY_SETTINGS:
         this.highlightTabHead(this.displaySettingsTabHead.val);
         this.displaySettingsTab.val.show();
@@ -393,14 +282,6 @@ export class ControlPanel extends EventEmitter {
 
   private removeTab(tab: Tab): void {
     switch (tab) {
-      case Tab.ACCOUNT:
-        ControlPanel.lowlightTabHead(this.accountTabHead.val);
-        this.accountTab.val.hide();
-        break;
-      case Tab.CHAT_LIST:
-        ControlPanel.lowlightTabHead(this.chatListTabHead.val);
-        this.chatListTab.val.hide();
-        break;
       case Tab.DISPLAY_SETTINGS:
         ControlPanel.lowlightTabHead(this.displaySettingsTabHead.val);
         this.displaySettingsTab.val.hide();
@@ -425,35 +306,14 @@ export class ControlPanel extends EventEmitter {
     tabHead.style.backgroundColor = ColorScheme.getAlternativeBackground();
   }
 
-  private async fire(chatEntry: ChatEntry): Promise<void> {
-    await Promise.all(
-      this.listeners("fire").map((callback) => callback(chatEntry)),
-    );
-  }
-
   private updateDisplaySettings(): void {
     this.emit("updateDisplaySettings");
     this.playerSettingsStorage.save(this.playerSettings);
   }
 
   private updateBlockSettings(): void {
-    if (this.chatListTab.val) {
-      this.chatListTab.val.updateBlockSettings();
-    }
     this.emit("updateBlockSettings");
     this.playerSettingsStorage.save(this.playerSettings);
-  }
-
-  public addChats(chatEntries: ChatEntry[]): void {
-    if (this.chatListTab.val) {
-      this.chatListTab.val.add(chatEntries);
-    }
-  }
-
-  public clearChats(): void {
-    if (this.chatListTab.val) {
-      this.chatListTab.val.clear();
-    }
   }
 
   public remove(): void {

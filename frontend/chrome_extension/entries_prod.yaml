@@ -1,6 +1,4 @@
 entries:
-  - source: frontend/chrome_extension/background/main_prod
-    output: background/index
   - source: frontend/chrome_extension/content_script/main_prod
     output: content_script/index
 extraAssets:
@@ -8,6 +6,12 @@ extraAssets:
     to: manifest.json
   - from: frontend/chrome_extension/image/app_icon.png
     to: image/app_icon.png
+  - from: frontend/chrome_extension/image/icon_16.png
+    to: image/icon_16.png
+  - from: frontend/chrome_extension/image/icon_32.png
+    to: image/icon_32.png
+  - from: frontend/chrome_extension/image/icon_48.png
+    to: image/icon_48.png
   - from: frontend/chrome_extension/_locales/en/messages.json
     to: _locales/en/messages.json
   - from: frontend/chrome_extension/_locales/ja/messages.json

@@ -18,7 +18,6 @@ function Get-RepoChildPath([string]$relativePath) {
 }
 
 $generatedRelativePaths = @(
-  "background",
   "content_script",
   "_locales",
   "image",
@@ -60,7 +59,9 @@ try {
   $requiredFiles = @(
     "manifest.json",
     "image/app_icon.png",
-    "background/index.js",
+    "image/icon_16.png",
+    "image/icon_32.png",
+    "image/icon_48.png",
     "content_script/index.js",
     "_locales/en/messages.json",
     "_locales/zh_CN/messages.json"
@@ -77,11 +78,9 @@ try {
   Copy-Item -LiteralPath (Get-RepoChildPath "image") -Destination $outputPath -Recurse
   Copy-Item -LiteralPath (Get-RepoChildPath "_locales") -Destination $outputPath -Recurse
 
-  foreach ($bundleDirectory in @("background", "content_script")) {
-    $destinationDirectory = Join-Path $outputPath $bundleDirectory
-    New-Item -ItemType Directory -Path $destinationDirectory | Out-Null
-    Copy-Item -LiteralPath (Get-RepoChildPath "$bundleDirectory/index.js") -Destination $destinationDirectory
-  }
+  $destinationDirectory = Join-Path $outputPath "content_script"
+  New-Item -ItemType Directory -Path $destinationDirectory | Out-Null
+  Copy-Item -LiteralPath (Get-RepoChildPath "content_script/index.js") -Destination $destinationDirectory
 
   $buildSucceeded = $true
   Write-Host "Built unpacked Chrome extension: $outputPath"

@@ -4,7 +4,6 @@ import { BlockPatternTester } from "../common/block_pattern_tester";
 import { KickChatContentBuilder } from "../common/chat_content_builder";
 import { DEBUG_LOG } from "../common/debug_log";
 import { GlobalDocuments } from "../common/global_documents";
-import { SERVICE_CLIENT } from "../common/service_client";
 import { ControlPanel } from "../control_panel";
 import { ControlPanelPeriodicAttacher } from "../control_panel_attacher";
 import { DanmakuCanvasController } from "../danmaku_canvas/danmaku_canvas_controller";
@@ -12,7 +11,6 @@ import { KICK_DANMAKU_PROFILE } from "../danmaku_profile";
 import { PlayerController } from "../player_controller";
 import { Assembler } from "../refresher";
 import { NoopChatWindowToggler } from "../chat_window_toggler";
-import { NoopVideoIdExtractor } from "../video_id_extractor";
 import { Fetcher } from "./kick_api";
 import { KickLiveApiChatPool } from "./kick_live_api_chat_pool";
 import { KickLiveDomChatPool } from "./kick_live_dom_chat_pool";
@@ -33,7 +31,7 @@ export function createKickDanmakuCanvas(
   heightPercent = KICK_DANMAKU_PROFILE.canvasHeightPercent ?? 100,
 ): HTMLDivElement {
   let canvas = document.createElement("div");
-  canvas.className = "danmage-kick-canvas";
+  canvas.className = "kickdanmu-canvas";
   canvas.style.position = "absolute";
   canvas.style.top = "0";
   canvas.style.left = "0";
@@ -117,14 +115,9 @@ export function createKickPlayerController(
   playerSettings: PlayerSettings,
   isVod: boolean,
 ): PlayerController {
-  let controlPanel = ControlPanel.createKick(
-    globalDocuments,
-    blockPatternTester,
-    playerSettings,
-  );
+  let controlPanel = ControlPanel.createKick(globalDocuments, playerSettings);
   return new PlayerController(
     window,
-    SERVICE_CLIENT,
     video,
     DanmakuCanvasController.create(
       canvas,
@@ -137,8 +130,6 @@ export function createKickPlayerController(
     controlPanel,
     ControlPanelPeriodicAttacher.create(controlPanel, anchorElementSelectFn),
     chatPool,
-    NoopVideoIdExtractor.create(),
-    undefined,
     KICK_DANMAKU_PROFILE.followPlaybackRate,
     KICK_DANMAKU_PROFILE.chatPacing,
     isVod,

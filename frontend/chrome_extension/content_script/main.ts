@@ -13,9 +13,6 @@ async function main(): Promise<void> {
     case "kick.com":
       Refresher.createKick(playerSettings);
       break;
-    case "static.crunchyroll.com":
-      Refresher.createCrunchyroll(playerSettings);
-      break;
     default:
       throw new Error(`Unsupported hostname: ${location.hostname}.`);
   }

@@ -3,10 +3,6 @@ import {
   PlayerSettings,
 } from "../../../../interface/player_settings";
 import {
-  newGetPlayerSettingsRequest,
-  newUpdatePlayerSettingsRequest,
-} from "../../../client_requests";
-import {
   BOTTOM_MARGIN_RANGE,
   DENSITY_RANGE,
   DISTRIBUTION_STYLE_DEFAULT,
@@ -23,78 +19,49 @@ import {
   SPEED_RANGE,
   TOP_MARGIN_RANGE,
 } from "./defaults";
-import { SERVICE_CLIENT } from "./service_client";
 import { parseMessage } from "@selfage/message/parser";
-import { WebServiceClient } from "@selfage/web_service_client";
 
+/**
+ * Settings live only in the site's localStorage, so each site keeps its own
+ * settings and nothing leaves the browser.
+ */
 export class PlayerSettingsStorage {
   public static create(): PlayerSettingsStorage {
-    return new PlayerSettingsStorage(SERVICE_CLIENT);
+    return new PlayerSettingsStorage();
   }
 
   private static NAME = "PlayerSettings";
 
-  public constructor(private serviceClient: WebServiceClient) {}
-
   public async read(): Promise<PlayerSettings> {
-    let remotePlayerSettings: PlayerSettings;
-    try {
-      remotePlayerSettings = (
-        await this.serviceClient.send(newGetPlayerSettingsRequest({}))
-      ).playerSettings;
-    } catch (e) {
-      remotePlayerSettings = {};
-    }
-    let localPlayerSettings = parseMessage(
+    let savedPlayerSettings = parseMessage(
       JSON.parse(localStorage.getItem(PlayerSettingsStorage.NAME)),
       PLAYER_SETTINGS,
     );
-    return PlayerSettingsStorage.normalizePlayerSettings(
-      remotePlayerSettings,
-      localPlayerSettings,
-    );
+    return PlayerSettingsStorage.normalizePlayerSettings(savedPlayerSettings);
   }
 
   private static normalizePlayerSettings(
-    remotePlayerSettings?: PlayerSettings,
-    localPlayerSettings?: PlayerSettings,
+    savedPlayerSettings?: PlayerSettings,
   ): PlayerSettings {
     let playerSettings: PlayerSettings = {
       displaySettings: {},
       blockSettings: {},
     };
 
+    let saved = savedPlayerSettings?.displaySettings;
     let displaySettings = playerSettings.displaySettings;
-    displaySettings.speed = SPEED_RANGE.getValidValue(
-      remotePlayerSettings?.displaySettings?.speed ??
-        localPlayerSettings?.displaySettings?.speed,
-    );
-    displaySettings.opacity = OPACITY_RANGE.getValidValue(
-      remotePlayerSettings?.displaySettings?.opacity ??
-        localPlayerSettings?.displaySettings?.opacity,
-    );
-    displaySettings.fontSize = FONT_SIZE_RANGE.getValidValue(
-      remotePlayerSettings?.displaySettings?.fontSize ??
-        localPlayerSettings?.displaySettings?.fontSize,
-    );
-    displaySettings.density = DENSITY_RANGE.getValidValue(
-      remotePlayerSettings?.displaySettings?.density ??
-        localPlayerSettings?.displaySettings?.density,
-    );
+    displaySettings.speed = SPEED_RANGE.getValidValue(saved?.speed);
+    displaySettings.opacity = OPACITY_RANGE.getValidValue(saved?.opacity);
+    displaySettings.fontSize = FONT_SIZE_RANGE.getValidValue(saved?.fontSize);
+    displaySettings.density = DENSITY_RANGE.getValidValue(saved?.density);
     displaySettings.topMargin = TOP_MARGIN_RANGE.getValidValue(
-      remotePlayerSettings?.displaySettings?.topMargin ??
-        localPlayerSettings?.displaySettings?.topMargin,
+      saved?.topMargin,
     );
     displaySettings.bottomMargin = BOTTOM_MARGIN_RANGE.getValidValue(
-      remotePlayerSettings?.displaySettings?.bottomMargin ??
-        localPlayerSettings?.displaySettings?.bottomMargin,
+      saved?.bottomMargin,
     );
-    let savedFontWeight =
-      remotePlayerSettings?.displaySettings?.fontWeight ??
-      localPlayerSettings?.displaySettings?.fontWeight;
-    let savedFontFamily =
-      remotePlayerSettings?.displaySettings?.fontFamily ??
-      localPlayerSettings?.displaySettings?.fontFamily;
+    let savedFontWeight = saved?.fontWeight;
+    let savedFontFamily = saved?.fontFamily;
     if (savedFontFamily === LEGACY_FONT_FAMILY_DEFAULT) {
       savedFontFamily = undefined;
       if (savedFontWeight === LEGACY_FONT_WEIGHT_DEFAULT) {
@@ -106,33 +73,21 @@ export class PlayerSettingsStorage {
     );
     displaySettings.fontFamily = savedFontFamily ?? FONT_FAMILY_DEFAULT;
     displaySettings.showUserName =
-      remotePlayerSettings?.displaySettings?.showUserName ??
-      localPlayerSettings?.displaySettings?.showUserName ??
-      SHOW_USER_NAME_DEFAULT;
-    displaySettings.enable =
-      remotePlayerSettings?.displaySettings?.enable ??
-      localPlayerSettings?.displaySettings?.enable ??
-      ENABLE_CHAT_SCROLLING_DEFAULT;
+      saved?.showUserName ?? SHOW_USER_NAME_DEFAULT;
+    displaySettings.enable = saved?.enable ?? ENABLE_CHAT_SCROLLING_DEFAULT;
     displaySettings.distributionStyle =
-      remotePlayerSettings?.displaySettings?.distributionStyle ??
-      localPlayerSettings?.displaySettings?.distributionStyle ??
-      DISTRIBUTION_STYLE_DEFAULT;
+      saved?.distributionStyle ?? DISTRIBUTION_STYLE_DEFAULT;
     displaySettings.enableInteraction =
-      remotePlayerSettings?.displaySettings?.enableInteraction ??
-      localPlayerSettings?.displaySettings?.enableInteraction ??
-      ENABLE_CHAT_INTERACTION_DEFAULT;
+      saved?.enableInteraction ?? ENABLE_CHAT_INTERACTION_DEFAULT;
     displaySettings.showChatWindow =
-      remotePlayerSettings?.displaySettings?.showChatWindow ??
-      localPlayerSettings?.displaySettings?.showChatWindow ??
-      SHOW_CHAT_WINDOW_DEFAULT;
+      saved?.showChatWindow ?? SHOW_CHAT_WINDOW_DEFAULT;
 
-    let blockSettings = playerSettings.blockSettings;
-    let mergedPatterns = [
-      ...(remotePlayerSettings?.blockSettings?.blockPatterns ?? []),
-      ...(localPlayerSettings?.blockSettings?.blockPatterns ?? []),
-    ];
+    // Older versions merged synced and local patterns, which could save
+    // duplicates.
     let seen = new Set<string>();
-    blockSettings.blockPatterns = mergedPatterns.filter((pattern) => {
+    playerSettings.blockSettings.blockPatterns = (
+      savedPlayerSettings?.blockSettings?.blockPatterns ?? []
+    ).filter((pattern) => {
       let key = `${pattern.kind}:${pattern.content}`;
       if (seen.has(key)) {
         return false;
@@ -147,11 +102,6 @@ export class PlayerSettingsStorage {
     localStorage.setItem(
       PlayerSettingsStorage.NAME,
       JSON.stringify(playerSettings),
-    );
-    await this.serviceClient.send(
-      newUpdatePlayerSettingsRequest({
-        playerSettings,
-      }),
     );
   }
 }

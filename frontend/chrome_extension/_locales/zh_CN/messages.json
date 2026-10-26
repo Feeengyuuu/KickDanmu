@@ -1,21 +1,15 @@
 {
   "extName": {
-    "message": "DanMage: YouTube和Twitch等网站上添加弹幕"
+    "message": "KickDanmu：Kick 直播弹幕"
   },
   "extDescription": {
-    "message": "提供跟bilibili和NicoNico一样的弹幕功能。"
+    "message": "把 Kick 直播和回放的聊天变成飘屏弹幕：斗鱼风加粗黑体、黑色描边、表情放大，自动过滤被删消息。也支持 YouTube 直播和 Twitch。"
   },
   "displaySettingsTitle": {
     "message": "样式设置"
   },
   "blockSettingsTitle": {
     "message": "屏蔽设置"
-  },
-  "chatTitle": {
-    "message": "评论"
-  },
-  "accountTitle": {
-    "message": "账号"
   },
   "opacityOption": {
     "message": "不透明度 - 百分比"
@@ -76,41 +70,5 @@
   },
   "RegExpBlockKind": {
     "message": "正则"
-  },
-  "submitNewChatButton": {
-    "message": "发射！"
-  },
-  "chatInputPlaceHolderSignedOut": {
-    "message": "登录后即可发送弹幕"
-  },
-  "chatInputPlaceHolderSignedIn": {
-    "message": "上膛"
-  },
-  "firstSignInReminder": {
-    "message": "使用Google账号登录 "
-  },
-  "secondSignInReminder": {
-    "message": " 即可同步设置和发送弹幕。"
-  },
-  "signInButton": {
-    "message": "使用Google账号登录"
-  },
-  "signOutButton": {
-    "message": "登出"
-  },
-  "welcomeMessage": {
-    "message": "欢迎！"
-  },
-  "welcomeWithNameMessage": {
-    "message": "欢迎，"
-  },
-  "welcomeWithNameEndingMessage": {
-    "message": "！"
-  },
-  "firstExplanation": {
-    "message": "设置会被同步，弹幕会被发送到 "
-  },
-  "secondExplanation": {
-    "message": " 上。"
   }
 }

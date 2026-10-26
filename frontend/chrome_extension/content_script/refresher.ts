@@ -26,7 +26,6 @@ export interface RefresherOptions {
 }
 
 export class YouTubeAssembler implements Assembler {
-  public assemble: () => void;
   private canvas: HTMLElement;
   private video: HTMLVideoElement;
   private chatContainer: Element;
@@ -44,7 +43,7 @@ export class YouTubeAssembler implements Assembler {
     this.anchorButtonElement = document.querySelector(".ytp-settings-button");
     let chatIframe = document.getElementById("chatframe") as HTMLIFrameElement;
     if (!chatIframe) {
-      this.assemble = this.assembleStructured;
+      this.chatContainer = undefined;
       return [this.canvas, this.video, this.anchorButtonElement];
     } else {
       this.iframeDocument = chatIframe.contentDocument;
@@ -53,7 +52,6 @@ export class YouTubeAssembler implements Assembler {
       this.chatWindowContainer2 = document.getElementById(
         "panels-full-bleed-container",
       );
-      this.assemble = this.assembleChat;
       return [
         this.canvas,
         this.video,
@@ -65,17 +63,12 @@ export class YouTubeAssembler implements Assembler {
     }
   }
 
-  public assembleStructured(): void {
-    this.playController = PlayerController.createYouTubeStructured(
-      this.video,
-      this.canvas,
-      this.anchorButtonElement,
-      GlobalDocuments.create([document]),
-      this.playerSettings,
-    );
+  // Danmaku come from the live chat; videos without one have nothing to show.
+  public canAssemble(): boolean {
+    return !!this.chatContainer;
   }
 
-  public assembleChat(): void {
+  public assemble(): void {
     this.playController = PlayerController.createYouTubeChat(
       this.video,
       this.canvas,
@@ -168,37 +161,6 @@ export class TwitchAssembler implements Assembler {
   }
 }
 
-export class CrunchyrollAssembler implements Assembler {
-  private canvas: HTMLElement;
-  private video: HTMLVideoElement;
-  private playController: PlayerController;
-
-  public constructor(private playerSettings: PlayerSettings) {}
-
-  public queryElements(): Element[] {
-    this.canvas = document.querySelector("#velocity-player-package");
-    this.video = document.querySelector("#player0") as HTMLVideoElement;
-    return [this.canvas, this.video];
-  }
-
-  public assemble(): void {
-    this.playController = PlayerController.createCrunchyroll(
-      this.video,
-      this.canvas,
-      () => document.querySelector("#settingsControl"),
-      GlobalDocuments.create([document]),
-      this.playerSettings,
-    );
-  }
-
-  public remove(): void {
-    if (this.playController) {
-      this.playController.remove();
-      this.playController = undefined;
-    }
-  }
-}
-
 enum ElementsComparisonResult {
   UNCHANGED,
   LACK_REQUIRED_ELEMENTS,
@@ -231,10 +193,6 @@ export class Refresher {
       routeKey: () => window.location.pathname,
       routeCheckIntervalMs: Refresher.ROUTE_CHECK_INTERVAL,
     });
-  }
-
-  public static createCrunchyroll(playerSettings: PlayerSettings): Refresher {
-    return new Refresher(new CrunchyrollAssembler(playerSettings), window);
   }
 
   private static REFRESH_INTERVAL = 500; // ms

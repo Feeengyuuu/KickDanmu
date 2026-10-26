@@ -1,21 +1,15 @@
 {
   "extName": {
-    "message": "DanMage: YouTube や Twitch などでコメントを流す"
+    "message": "KickDanmu：Kick のチャットを弾幕表示"
   },
   "extDescription": {
-    "message": "コメントをニコニコ動画っぽく流す。"
+    "message": "Kick のライブとアーカイブのチャットを流れる弾幕に。太字の縁取り文字、大きめのエモート。YouTube ライブと Twitch にも対応。"
   },
   "displaySettingsTitle": {
     "message": "スタイル設定"
   },
   "blockSettingsTitle": {
     "message": "ブロック設定"
-  },
-  "chatTitle": {
-    "message": "コメント"
-  },
-  "accountTitle": {
-    "message": "アカウント"
   },
   "opacityOption": {
     "message": "不透明度　‐　パーセント"
@@ -76,41 +70,5 @@
   },
   "RegExpBlockKind": {
     "message": "正規表示式"
-  },
-  "submitNewChatButton": {
-    "message": "送信"
-  },
-  "chatInputPlaceHolderSignedOut": {
-    "message": "ログイン後にコメントを送信可能"
-  },
-  "chatInputPlaceHolderSignedIn": {
-    "message": "ここにコメント"
-  },
-  "firstSignInReminder": {
-    "message": "Googleアカウントで "
-  },
-  "secondSignInReminder": {
-    "message": " にログインすると、設定を同期してコメントを投稿できるようになります。"
-  },
-  "signInButton": {
-    "message": "Googleでログイン"
-  },
-  "signOutButton": {
-    "message": "ログアウト"
-  },
-  "welcomeMessage": {
-    "message": "こんにちは！"
-  },
-  "welcomeWithNameMessage": {
-    "message": ""
-  },
-  "welcomeWithNameEndingMessage": {
-    "message": "、こんにちは！"
-  },
-  "firstExplanation": {
-    "message": "設定が同期され、チャットが "
-  },
-  "secondExplanation": {
-    "message": " に投稿されます。"
   }
 }
